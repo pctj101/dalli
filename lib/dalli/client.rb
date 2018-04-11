@@ -345,7 +345,7 @@ module Dalli
         @options[:discovery_interval] ||= 1.hour # reasonable refresh default, more frequent if not a heavy call
 	if @last_discovery.nil? || Time.now > (@last_discovery + @options[:discovery_interval])
 	  Dalli.logger.debug { "discovery: refresh stale data" }
-	  new_servers = @options[:discovery].servers
+	  new_servers = @options[:discovery].refresh.servers
 	  if new_servers.nil?
 	    Dalli.logger.debug { "discovery: failed" }
 	  else
@@ -357,7 +357,10 @@ module Dalli
 	    else
 	      Dalli.logger.debug { "discovery: no change" }
 	    end
+            Dalli.logger.debug { new_servers.inspect }
 	  end
+	else
+          Dalli.logger.debug { "discovery: %d more seconds"  % (@last_discovery + @options[:discovery_interval] - Time.now) }
 	end
       end
     end
