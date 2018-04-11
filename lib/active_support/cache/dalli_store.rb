@@ -34,6 +34,17 @@ module ActiveSupport
       # If no addresses are specified, then DalliStore will connect to
       # localhost port 11211 (the default memcached port).
       #
+      # Elasticache Support
+      #   If you are using Amazon Elasticache, you can supply a discovery object which responds to 
+      #   #servers and Dalli will use that to discover the current servers as necessary by
+      #   passing :discovery => discovery_object and :discovery_interval which will set the interval
+      #   at which the current servers will be forced to refresh at
+      #
+      # endpoint    = "memcached.example.cfg.region.cache.amazonaws.com:11211"
+      # elasticache = Dalli::ElastiCache.new(endpoint) # responds to #server method with array of hostname:ports 
+      # # elasticache = ["memcached.example.0001.region.cache.amazonaws.com:11211", "memcached.example.0002.region.cache.amazonaws.com:11211"]
+      # config.cache_store = :dalli_store, elasticache.servers, {:expires_in => 1.minute, :compress => true, :discovery => elasticache, :discovery_interval => 1.hour }
+      #
       # Connection Pool support
       #
       # If you are using multithreaded Rails, the Rails.cache singleton can become a source

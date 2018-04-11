@@ -29,6 +29,8 @@ module Dalli
     # - :serializer - defaults to Marshal
     # - :compressor - defaults to zlib
     # - :cache_nils - defaults to false, if true Dalli will not treat cached nil values as 'not found' for #fetch operations.
+    # - :discovery - discovery object which responds with array of [ "host:port", "host:port"] for Amazon Elasticache Node Discovery
+    # - :discovery_interval - interval at which to refresh discovered serves
     #
     def initialize(servers=nil, options={})
       @servers = normalize_servers(servers || ENV["MEMCACHE_SERVERS"] || '127.0.0.1:11211')
@@ -336,7 +338,32 @@ module Dalli
       end
     end
 
+    ##
+    # If @options[:discovery] are set then discover servers
+    def rediscover
+      if @options[:discovery]
+        @options[:discovery_interval] ||= 1.hour # reasonable refresh default, more frequent if not a heavy call
+	if @last_discovery.nil? || Time.now > (@last_discovery + @options[:discovery_interval])
+	  Dalli.logger.debug { "discovery: refresh stale data" }
+	  new_servers = @options[:discovery].servers
+	  if new_servers.nil?
+	    Dalli.logger.debug { "discovery: failed" }
+	  else
+	    @last_discovery = Time.now
+	    if new_servers != @servers
+	      Dalli.logger.debug { "discovery: new servers" }
+	      close
+	      @servers = new_servers
+	    else
+	      Dalli.logger.debug { "discovery: no change" }
+	    end
+	  end
+	end
+      end
+    end
+
     def ring
+      rediscover
       @ring ||= Dalli::Ring.new(
         @servers.map do |s|
          server_options = {}
